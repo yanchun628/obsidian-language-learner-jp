@@ -6,7 +6,7 @@
 0.2.5版本主要面板：
 
 
-![主要面板](https://image.asa-world.cn/pic/20240807090419.png)
+![主要面板](public/reading.png)
 
 # 新增功能
 
@@ -17,17 +17,17 @@
 
 
 
-![0.3.1版本阅读模式](https://image.asa-world.cn/pic/20240807092051.png)
+![0.3.1版本阅读模式](public/newreading.png)
 
 ## 变形单词识别
 
 在学习面板中填写单词的变形形式，每个变形单词用","隔开，可以添加名词复数、动词时态语态变化形式等（小提示：可以直接复制词典中的变形单词到变形栏中，不用一个一个打）
 
-![记录单词](https://image.asa-world.cn/pic/20240807094251.png)
+![记录单词](public/recordword.png)
 
 提交后可以看到have的各种形式都识别到了，学习状态与have相同：
 
-![变形单词识别](https://image.asa-world.cn/pic/20240807094440.png)
+![变形单词识别](public/changingword.png)
 
 ## 单词文件库
 
@@ -36,12 +36,12 @@
 可以在设置里开启单词文件库，选择一个存放单词文件的文件夹后，每当退出阅读模式，将自动生成单词的md文件。如果你已经使用 0.2.5 版本一段时间了，indexDB中有了一些单词数据，你可以点击“更新单词文件库”，它会自动把indexDB中的非无视状态（新学、眼熟等状态）的单词写入单词文件库路径文件夹
 
 
-![新增设置项](https://image.asa-world.cn/pic/20240807093029.png)
+![新增设置项](public/newsetting.png)
 
 生成的单词文件如下：
 
 
-![单词文件](https://image.asa-world.cn/pic/image-20240826192616819.png)
+![单词文件](public/wordfile.png)
 
 单词信息存放在每个md文件的frontmatter中，你可以自由修改单词信息，修改后点击“更新indexDB数据库”，indexDB数据库的数据就会更新同步，更新过程中无视状态的单词不会受到影响。（你也可以删除某个单词文件，indexDB数据库中的该单词数据也会删除）
 
@@ -51,7 +51,7 @@
 
 得益于obsidian的双链，打开关系图谱会发现单词和所在的文件连在了一起。
 
-![关系图谱](https://image.asa-world.cn/pic/20240807093544.png)
+![关系图谱](public/relgraph.png)
 
 关系图谱配色推荐：
 
@@ -72,7 +72,7 @@ path:文章路径 ：#9c9c9c
 - 从realease下载最新插件压缩包
 - 解压到obsidian库的`.obsidian/plugins/`文件夹下
 - 重启obsidian，在插件中启用本插件`Language Learner`.
-- 配置见[使用指南](https://github.com/asa-world/obsidian-language-learner/tree/0.3.2#使用指南)
+- 配置见[使用指南](public/tutorial.pdf)
 
 ## 自行构建
 
