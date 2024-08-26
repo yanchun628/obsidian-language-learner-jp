@@ -79,7 +79,7 @@ path:文章路径 ：#9c9c9c
 下载源码到本地
 
 ```
-git clone https://github.com/guopenghui/obsidian-language-learner.git
+git clone https://github.com/asa-world/obsidian-language-learner.git
 ```
 
 进入文件夹，运行
