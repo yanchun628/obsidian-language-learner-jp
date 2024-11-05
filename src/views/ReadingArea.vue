@@ -86,7 +86,7 @@ import { useEvent } from "@/utils/use";
 import store from "@/store";
 import { ReadingView } from "./ReadingView";
 import CountBar from "./CountBar.vue";
-import{processContent} from "../plugin";
+//import{processContent} from "../plugin";
 let vueThis = getCurrentInstance();
 var view = vueThis.appContext.config.globalProperties.view as ReadingView;
 let plugin = view.plugin as PluginType;
@@ -104,14 +104,19 @@ const themeConfig: GlobalThemeOverrides = {
         titleFontWeight: "700",
     },
 };
-
+const localPrefix = require("electron").ipcRenderer.sendSync("file-url");
 let frontMatter = plugin.app.metadataCache.getFileCache(view.file).frontmatter;
 let audioSource = (frontMatter["langr-audio"] || "") as string;
-if (audioSource && audioSource.startsWith("~/")) {
-    const prefix = Platform.isDesktopApp ? "app://local/" : "http://localhost/_capacitor_file_";
+if(audioSource){
+    if (audioSource.startsWith("~/")) {
+    const prefix = Platform.isDesktopApp ? localPrefix : "http://localhost/_capacitor_file_";
     audioSource =
         prefix + plugin.constants.basePath + audioSource.slice(1);
+    }else {
+        audioSource = localPrefix + audioSource;
 }
+}
+
 
 // 记笔记
 let activeNotes = ref(false);
@@ -240,7 +245,7 @@ watch(
                 `${(p - 1) * pageSize.value + 1}`
             );
         }
-        processContent();
+        //await processContent();
     },
     { immediate: true }
 );
@@ -266,86 +271,7 @@ async function addIgnores() {
     }
 
     refreshCount();
-    processContent();
-}
-
-async function processContent(){
-
-    // 获取包含特定class的元素
-    await fetchData();
-    let textArea = document.querySelector('.text-area');
-    let htmlContent = textArea.innerHTML;
-    //使用正则表达式匹配同时包含特定符号的 <p> 标签元素，并去除所有标签保留文本
-    htmlContent = htmlContent.replace(/<p>(?=.*!)(?=.*\[)(?=.*\])(?=.*\()(?=.*\)).*<\/p>/g, function(match) {
-        var pattern = /!\[(.*?)\]\((.*?)\)/;
-        var str = match.replace(/<[^>]+>/g, '');
-        var tq = pattern.exec(str);
-        var img = document.createElement('img');
-        var imgContainer = document.createElement('div');
-        imgContainer.style.textAlign = 'center';  // 设置文本居中对齐
-        var imgWrapper = document.createElement('div');
-        imgWrapper.style.textAlign = 'center';  // 设置为内联块元素，使其水平居中
-
-        if (tq) {
-            var altText = tq[1];
-            var srcUrl = tq[2];
-            
-            if (/^https?:\/\//.test(srcUrl)) {
-                img.alt = altText;
-                img.src = srcUrl;
-                imgWrapper.appendChild(img);
-                imgContainer.appendChild(imgWrapper);
-                return imgContainer.innerHTML; 
-            }
-            else{
-                imgnum = localStorage.getItem('imgnum') || ''
-                img.alt = altText;
-                img.src =  mergeStrings(imgnum,srcUrl);
-                imgWrapper.appendChild(img);
-                imgContainer.appendChild(imgWrapper);
-                return imgContainer.innerHTML; 
-            }
-        }
-        
-    });
-    // 渲染多级标题
-    htmlContent = htmlContent.replace(/(<span class="stns">)# (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h1>$1$2$3</h1>');
-    htmlContent = htmlContent.replace(/(<span class="stns">)## (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h2>$1$2$3</h2>');
-    htmlContent = htmlContent.replace(/(<span class="stns">)### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h3>$1$2$3</h3>');
-    htmlContent = htmlContent.replace(/(<span class="stns">)#### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h4>$1$2$3</h4>');
-    htmlContent = htmlContent.replace(/(<span class="stns">)##### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h5>$1$2$3</h5>');
-    htmlContent = htmlContent.replace(/(<span class="stns">)###### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h6>$1$2$3</h6>');
-    
-    //渲染粗体
-    htmlContent = htmlContent.replace(/(?<!\\)\*(?<!\\)\*(<span.*?>.*?<\/span>)(?<!\\)\*(?<!\\)\*/g, '<b>$1</b>');
-    htmlContent = htmlContent.replace(/(?<!\\)\_(?<!\\)\_(<span.*?>.*?<\/span>)(?<!\\)\_(?<!\\)\_/g, '<b>$1</b>');
-
-    //渲染斜体
-    htmlContent = htmlContent.replace(/(?<!\\)\*(<span.*?>.*?<\/span>)(?<!\\)\*/g, '<i>$1</i>');
-    htmlContent = htmlContent.replace(/(?<!\\)\_(<span.*?>.*?<\/span>)(?<!\\)\_/g, '<i>$1</i>');
-
-
-    htmlContent = htmlContent.replace(/(?<!\\)\~(?<!\\)\~(<span.*?>.*?<\/span>)(?<!\\)\~(?<!\\)\~/g, '<del>$1</del>');
-
-    // 将修改后的HTML内容重新设置回元素
-    textArea.innerHTML = htmlContent;
-}
-
-function mergeStrings(str1:string, str2:string) {
-    // 获取 str2 的前 3 个字符
-    let prefix = str2.substring(0, 3);
-    // 在 str1 中查找 prefix 的位置
-    let index = str1.indexOf(prefix);
-
-    // 如果找到匹配的前缀
-    if (index !== -1&& index !== 0 && str1.charAt(index - 1) === '/') {
-        // 截断 str1 并与 str2 相连
-        let firstPart = str1.substring(0, index);
-        return firstPart + str2;
-    } else {
-        // 如果没有找到匹配的前缀，则返回 str1 和 str2 原样相连
-        return str1 + str2;
-    }
+    //await processContent();
 }
 
 let reading = ref(null);
@@ -404,28 +330,6 @@ if (plugin.constants.platform === "mobile") {
         }
     });
 }
-async function fetchData() {
-    let previousContent = ''; // 上一次抓取到的内容
-    return new Promise((resolve, reject) => {
-        let intervalId = setInterval(() => {
-            let textArea = document.querySelector('.text-area');
-
-            if (textArea) {
-                let currentContent = textArea.innerHTML.trim();
-                
-                if (previousContent !== ''&&previousContent !==currentContent) {
-                    clearInterval(intervalId); // 内容变化时清除定时器
-                    resolve(currentContent); // 解析 Promise，传递最终内容
-                } else {
-                    previousContent = currentContent; // 更新上一次抓取的内容
-                }
-            } else {
-                clearInterval(intervalId); 
-            }
-        }, 100);
-    });
-}
-
 </script>
 
 <style lang="scss">

@@ -139,7 +139,8 @@ export class SettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName(t("Server Port"))
             .setDesc(
-                t('An integer between 1024-65535. It should be same as "PORT" variable in .env file of server')
+                //t('An integer between 1024-65535. It should be same as "PORT" variable in .env file of server')
+                t('It should be same as "PORT" variable in .env file of server')
             )
             .setDisabled(!this.plugin.settings.use_server)
             .addText((text) =>
@@ -147,7 +148,8 @@ export class SettingTab extends PluginSettingTab {
                     .setValue(String(this.plugin.settings.port))
                     .onChange(debounce(async (port) => {
                         let p = Number(port);
-                        if (!isNaN(p) && p >= 1023 && p <= 65535) {
+                        //if (!isNaN(p) && p >= 1023 && p <= 65535) {
+                        if (!isNaN(p)) {
                             this.plugin.settings.port = p;
                             (this.plugin.db as WebDb).port = p;
                             await this.plugin.saveSettings();

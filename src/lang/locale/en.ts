@@ -12,7 +12,8 @@ export default {
 
     // DataPanelView.ts
     "Data Panel": "Data Panel",
-
+    'It should be same as "PORT" variable in .env file of server':
+        'It should be same as "PORT" variable in .env file of server',
 
     // SearchPanelView.ts
     "Search Panel": "Search Panel",

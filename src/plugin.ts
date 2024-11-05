@@ -20,7 +20,7 @@ import { READING_VIEW_TYPE, READING_ICON, ReadingView } from "./views/ReadingVie
 import { LearnPanelView, LEARN_ICON, LEARN_PANEL_VIEW } from "./views/LearnPanelView";
 import { StatView, STAT_ICON, STAT_VIEW_TYPE } from "./views/StatView";
 import { DataPanelView, DATA_ICON, DATA_PANEL_VIEW } from "./views/DataPanelView";
-import { PDFView, PDF_FILE_EXTENSION, VIEW_TYPE_PDF } from "./views/PDFView";
+//import { PDFView, PDF_FILE_EXTENSION, VIEW_TYPE_PDF } from "./views/PDFView";
 
 import { t } from "./lang/helper";
 import DbProvider from "./db/base";
@@ -47,7 +47,8 @@ import { ignorableWatch } from "@vueuse/core";
 
 export const FRONT_MATTER_KEY: string = "langr";
 
-export var imgnum: string = localStorage.getItem('imgnum') || '';
+export var imgnum: string
+// = localStorage.getItem('imgnum') || '';
 
 
 const statusMap = [
@@ -100,7 +101,7 @@ export default class LanguageLearner extends Plugin {
         // 	callback: () => new Notice("hello!")
         // })
 
-        await this.replacePDF();
+        //await this.replacePDF();
 
         this.initStore();
 
@@ -143,9 +144,9 @@ export default class LanguageLearner extends Plugin {
 
         this.db.close();
         this.server?.close();
-        if (await app.vault.adapter.exists(".obsidian/plugins/obsidian-language-learner/pdf/web/viewer.html")) {
-            this.registerExtensions([PDF_FILE_EXTENSION], "pdf");
-        }
+        //if (await app.vault.adapter.exists(".obsidian/plugins/obsidian-language-learner/pdf/web/viewer.html")) {
+        //    this.registerExtensions([PDF_FILE_EXTENSION], "pdf");
+        //}
 
         this.vueApp.unmount();
         this.appEl.remove();
@@ -159,27 +160,27 @@ export default class LanguageLearner extends Plugin {
         };
     }
 
-    async replacePDF() {
-        if (await app.vault.adapter.exists(
-            ".obsidian/plugins/obsidian-language-learner/pdf/web/viewer.html"
-        )) {
-            this.registerView(VIEW_TYPE_PDF, (leaf) => {
-                return new PDFView(leaf);
-            });
+    // async replacePDF() {
+    //     if (await app.vault.adapter.exists(
+    //         ".obsidian/plugins/obsidian-language-learner/pdf/web/viewer.html"
+    //     )) {
+    //         this.registerView(VIEW_TYPE_PDF, (leaf) => {
+    //             return new PDFView(leaf);
+    //         });
 
-            (this.app as any).viewRegistry.unregisterExtensions([
-                PDF_FILE_EXTENSION,
-            ]);
-            this.registerExtensions([PDF_FILE_EXTENSION], VIEW_TYPE_PDF);
+    //         (this.app as any).viewRegistry.unregisterExtensions([
+    //             PDF_FILE_EXTENSION,
+    //         ]);
+    //         this.registerExtensions([PDF_FILE_EXTENSION], VIEW_TYPE_PDF);
 
-            this.registerDomEvent(window, "message", (evt) => {
-                if (evt.data.type === "search") {
-                    // if (evt.data.funckey || this.store.searchPinned)
-                    this.queryWord(evt.data.selection);
-                }
-            });
-        }
-    }
+    //         this.registerDomEvent(window, "message", (evt) => {
+    //             if (evt.data.type === "search") {
+    //                 // if (evt.data.funckey || this.store.searchPinned)
+    //                 this.queryWord(evt.data.selection);
+    //             }
+    //         });
+    //     }
+    // }
 
     initStore() {
         this.store.dark = document.body.hasClass("theme-dark");
@@ -434,10 +435,10 @@ export default class LanguageLearner extends Plugin {
                             item.setTitle(t("Open as Reading View"))
                                 .setIcon(READING_ICON)
                                 .onClick(async () => { 
-                                    processContent();
+                                    //processContent();
                                     await pluginSelf.setReadingView(this.leaf);
-                                    await fetchData();                                   
-                                    processContent();
+                                   // await fetchData();                                   
+                                    //processContent();
                                 });
                                     
                         });
@@ -457,24 +458,36 @@ export default class LanguageLearner extends Plugin {
                             if (state.type === "markdown" && state.state?.file) {
                                 const cache = pluginSelf.app.metadataCache
                                     .getCache(state.state.file);
+                                var imgElements = document.getElementsByTagName('img');
+                                for (var i = 0; i < imgElements.length; i++) {
+                                    if (imgElements[i].getAttribute('src')) {
+                                        imgnum = imgElements[i].getAttribute('src');
+                                        if (!imgnum.includes('http')) {
+                                            console.log("imgnum ",imgnum);
+                                            //localStorage.setItem('imgnum', imgnum); // 存储到本地存储中
+                                            break; // 如果找到了，可以选择跳出循环
+                                        }
+                                    }
+                                }
                                 if (cache?.frontmatter && cache.frontmatter[FRONT_MATTER_KEY]) {
                                     if (!pluginSelf.markdownButtons["reading"]) {
-                                        pluginSelf.markdownButtons["reading"] =
-                                            (this.view as MarkdownView).addAction(
-                                                "view",
-                                                t("Open as Reading View"),
-                                                async ()  => {
-                                                    processContent();
-                                                    await pluginSelf.setReadingView(this);
-                                                    await fetchData();                                   
-                                                    processContent();
-                                                }
-                                            );
-                                        pluginSelf.markdownButtons["reading"].addClass("change-to-reading");
+                                        // 在软件初始化的时候，view上面可能没有 addAction 这个方法
+                                        setTimeout(() => {
+                                            pluginSelf.markdownButtons["reading"] =
+                                                (this.view as MarkdownView).addAction(
+                                                    "view",
+                                                    t("Open as Reading View"),
+                                                    () => {
+                                                        pluginSelf.setReadingView(this);
+                                                    }
+                                                );
+                                            pluginSelf.markdownButtons["reading"].addClass("change-to-reading");
+                                        })
                                     }
                                 } else {
+                                    // 在软件初始化的时候，view上面可能没有 actionsEl 这个字段
                                     (this.view.actionsEl as HTMLElement)
-                                        .querySelectorAll(".change-to-reading")
+                                    ?.querySelectorAll(".change-to-reading")
                                         .forEach(el => el.remove());
                                     // pluginSelf.markdownButtons["reading"]?.remove();
                                     pluginSelf.markdownButtons["reading"] = null;
@@ -676,15 +689,14 @@ export default class LanguageLearner extends Plugin {
 
     //直接生成frontmatter文本
     async createFM(cont:ExpressionInfo){
-
         const status = statusMap[cont.status];
         const aliasesString = cont.aliases ? `aliases: \n${cont.aliases.map(line => `- ${line}`).join('\n')}` : '';
         const tagsString = cont.tags.length ? `tags: \n${cont.tags.map(line => `- ${line}`).join('\n')}` : '';
-        const notesString = cont.notes.length ? `notes: \n${cont.notes.map(line => `- '${line}'`).join('\n')}` : '';
+        const notesString = cont.notes.length ? `notes: \n${cont.notes.map(line => `- "${line}"`).join('\n')}` : '';
         //const sentencesString = cont.sentences.length ? `sentences: \n${cont.sentences.map(sentence => `- ${sentence.text}-${sentence.trans}-${sentence.origin}`).join('\n')}` : 'sentences: \n';
         let sentenceCounter = 1;
         const sentencesString = cont.sentences.length ? `${cont.sentences.map(sentence => {
-            const result = `sentence${sentenceCounter}: '${sentence.text}'\ntrans${sentenceCounter}: '${sentence.trans}'\norigin${sentenceCounter}: '${sentence.origin}'`;
+            const result = `sentence${sentenceCounter}: "${sentence.text}"\ntrans${sentenceCounter}: "${sentence.trans}"\norigin${sentenceCounter}: "${sentence.origin}"`;
             sentenceCounter++;
             return result;
         }).join('\n')}` : '';
@@ -692,7 +704,7 @@ export default class LanguageLearner extends Plugin {
         const formattedDate = moment.unix(cont.date).format('YYYY-MM-DD HH:mm:ss');
         var fm = `---
 expression: ${cont.expression}
-meaning: '${cont.meaning}'
+meaning: "${cont.meaning}"
 ${aliasesString}
 date: ${formattedDate}
 status: ${status}
@@ -786,124 +798,4 @@ ${sentencesString}
 
 
 
-}
-
-
-
-export function processContent(){
-    // 获取包含特定class的元素
-
-    let textArea = document.querySelector('.text-area');
-    
-    if (textArea) {
-        let htmlContent = textArea.innerHTML;
-        //使用正则表达式匹配同时包含特定符号的 <p> 标签元素，并去除所有标签保留文本
-        htmlContent = htmlContent.replace(/<p>(?=.*!)(?=.*\[)(?=.*\])(?=.*\()(?=.*\)).*<\/p>/g, function(match) {
-            var pattern = /!\[(.*?)\]\((.*?)\)/;
-            var str = match.replace(/<[^>]+>/g, '');
-            var tq = pattern.exec(str);
-            var img = document.createElement('img');
-            var imgContainer = document.createElement('div');
-            imgContainer.style.textAlign = 'center';  // 设置文本居中对齐
-            var imgWrapper = document.createElement('div');
-            imgWrapper.style.textAlign = 'center';  // 设置为内联块元素，使其水平居中
-
-            if (tq) {
-                var altText = tq[1];
-                var srcUrl = tq[2];
-                
-                if (/^https?:\/\//.test(srcUrl)) {
-                    img.alt = altText;
-                    img.src = srcUrl;
-                    imgWrapper.appendChild(img);
-                    imgContainer.appendChild(imgWrapper);
-                    return imgContainer.innerHTML; 
-                }
-                else{
-                    img.alt = altText;
-                    img.src =  mergeStrings(imgnum,srcUrl);
-                    imgWrapper.appendChild(img);
-                    imgContainer.appendChild(imgWrapper);
-                    return imgContainer.innerHTML; 
-                }
-            }
-            
-        });
-        // 渲染多级标题
-        htmlContent = htmlContent.replace(/(<span class="stns">)# (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h1>$1$2$3</h1>');
-        htmlContent = htmlContent.replace(/(<span class="stns">)## (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h2>$1$2$3</h2>');
-        htmlContent = htmlContent.replace(/(<span class="stns">)### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h3>$1$2$3</h3>');
-        htmlContent = htmlContent.replace(/(<span class="stns">)#### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h4>$1$2$3</h4>');
-        htmlContent = htmlContent.replace(/(<span class="stns">)##### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h5>$1$2$3</h5>');
-        htmlContent = htmlContent.replace(/(<span class="stns">)###### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h6>$1$2$3</h6>');
-        
-        //渲染粗体
-        htmlContent = htmlContent.replace(/(?<!\\)\*(?<!\\)\*(<span.*?>.*?<\/span>)(?<!\\)\*(?<!\\)\*/g, '<b>$1</b>');
-        htmlContent = htmlContent.replace(/(?<!\\)\_(?<!\\)\_(<span.*?>.*?<\/span>)(?<!\\)\_(?<!\\)\_/g, '<b>$1</b>');
-
-        //渲染斜体
-        htmlContent = htmlContent.replace(/(?<!\\)\*(<span.*?>.*?<\/span>)(?<!\\)\*/g, '<i>$1</i>');
-        htmlContent = htmlContent.replace(/(?<!\\)\_(<span.*?>.*?<\/span>)(?<!\\)\_/g, '<i>$1</i>');
-
-
-        htmlContent = htmlContent.replace(/(?<!\\)\~(?<!\\)\~(<span.*?>.*?<\/span>)(?<!\\)\~(?<!\\)\~/g, '<del>$1</del>');
-
-        textArea.innerHTML = htmlContent;
-    } else {
-        // 查找页面中的 img 元素并提取 imgnum 并存储到 localStorage 中
-        var imgElements = document.getElementsByTagName('img');
-        for (var i = 0; i < imgElements.length; i++) {
-            if (imgElements[i].getAttribute('src')) {
-                imgnum = imgElements[i].getAttribute('src');
-                
-                if (!imgnum.includes('http')) {
-                    localStorage.setItem('imgnum', imgnum); // 存储到本地存储中
-                    break; // 如果找到了，可以选择跳出循环
-                }
-            }
-        }
-    }
-}
-
-function mergeStrings(str1:string, str2:string) {
-    // 获取 str2 的前 3 个字符
-    let prefix = str2.substring(0, 3);
-    // 在 str1 中查找 prefix 的位置
-    let index = str1.indexOf(prefix);
-
-    // 如果找到匹配的前缀
-    if (index !== -1&& index !== 0 && str1.charAt(index - 1) === '/') {
-        // 截断 str1 并与 str2 相连
-        let firstPart = str1.substring(0, index);
-        return firstPart + str2;
-    } else {
-        // 如果没有找到匹配的前缀，则返回 str1 和 str2 原样相连
-        return str1 + str2;
-    }
-}
-
-async function fetchData() {
-    let previousContent = ''; // 上一次抓取到的内容
-    return new Promise((resolve, reject) => {
-        let intervalId = setInterval(() => {
-            let textArea = document.querySelector('.text-area');
-
-            if (textArea) {
-                let currentContent = textArea.innerHTML.trim();
-                
-                // 检查 textArea 中是否包含 class 为 'article' 的元素
-                let hasArticleClass = textArea.querySelector('.article') !== null;
-
-                if (hasArticleClass) {
-                    clearInterval(intervalId); // 内容无变化时清除定时器
-                    resolve(currentContent); // 解析 Promise，传递最终内容
-                } else {
-                    previousContent = currentContent; // 更新上一次抓取的内容
-                }
-            } else {
-                clearInterval(intervalId); // 内容无变化时清除定时器
-                console.warn('.text-area element not found');
-            }
-        }, 100);
-    });
 }

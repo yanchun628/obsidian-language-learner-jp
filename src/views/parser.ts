@@ -4,14 +4,13 @@ import { Root, Content, Literal, Parent, Sentence } from "nlcst";
 import { modifyChildren } from "unist-util-modify-children";
 import { visit } from "unist-util-visit";
 import { toString } from "nlcst-to-string";
-
+import{imgnum} from "../plugin";
 import { Phrase, Word } from "@/db/interface";
 import Plugin from "@/plugin";
 
 const STATUS_MAP = ["ignore", "learning", "familiar", "known", "learned"];
 type AnyNode = Root | Content | Content[];
-export var state = {loading_flag: false,};
-
+export var state = 0;
 export class TextParser {
     // 记录短语位置
     phrases: Phrase[] = [];
@@ -30,9 +29,80 @@ export class TextParser {
 
     async parse(data: string) {
         let newHTML = await this.text2HTML(data.trim());
-        return newHTML;
+        let html = await this.processContent(newHTML)
+        return html;
     }
-
+    async processContent(htmlContent:string){
+        //使用正则表达式匹配同时包含特定符号的 <p> 标签元素，并去除所有标签保留文本
+        htmlContent = htmlContent.replace(/<p>(?=.*!)(?=.*\[)(?=.*\])(?=.*\()(?=.*\)).*<\/p>/g, function(match) {
+            var pattern = /!\[(.*?)\]\((.*?)\)/;
+            var str = match.replace(/<[^>]+>/g, '');
+            var tq = pattern.exec(str);
+            var img = document.createElement('img');
+            var imgContainer = document.createElement('div');
+            imgContainer.style.textAlign = 'center';  // 设置文本居中对齐
+            var imgWrapper = document.createElement('div');
+            imgWrapper.style.textAlign = 'center';  // 设置为内联块元素，使其水平居中
+            if (tq) {
+                var altText = tq[1];
+                var srcUrl = tq[2];
+                
+                if (/^https?:\/\//.test(srcUrl)) {
+                    img.alt = altText;
+                    img.src = srcUrl;
+                    imgWrapper.appendChild(img);
+                    imgContainer.appendChild(imgWrapper);
+                    return imgContainer.innerHTML; 
+                }
+                else if(imgnum){
+                    let str1 = imgnum;
+                    let str2 = srcUrl;
+                    //let imgnum = localStorage.getItem('imgnum') || ''
+                    let prefix = str2.substring(0, 3);
+                    // 在 str1 中查找 prefix 的位置
+                    let index = str1.indexOf(prefix);
+                
+                    // 如果找到匹配的前缀
+                    if (index !== -1&& index !== 0 && str1.charAt(index - 1) === '/') {
+                        // 截断 str1 并与 str2 相连
+                        let firstPart = str1.substring(0, index);
+                        img.src = firstPart + str2;
+                    } else {
+                        // 如果没有找到匹配的前缀，则返回 str1 和 str2 原样相连
+                        img.src = str1 + str2;
+                    }
+                    img.alt = altText;
+                    //img.src =  this.mergeStrings(localPrefix,srcUrl);
+                    imgWrapper.appendChild(img);
+                    imgContainer.appendChild(imgWrapper);
+                    return imgContainer.innerHTML; 
+                }
+            }
+            
+        });
+        // 渲染多级标题
+        htmlContent = htmlContent.replace(/(<span class="stns">)# (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h1>$1$2$3</h1>');
+        htmlContent = htmlContent.replace(/(<span class="stns">)## (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h2>$1$2$3</h2>');
+        htmlContent = htmlContent.replace(/(<span class="stns">)### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h3>$1$2$3</h3>');
+        htmlContent = htmlContent.replace(/(<span class="stns">)#### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h4>$1$2$3</h4>');
+        htmlContent = htmlContent.replace(/(<span class="stns">)##### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h5>$1$2$3</h5>');
+        htmlContent = htmlContent.replace(/(<span class="stns">)###### (.*?)(<\/span>)(?=\s*<\/p>)/g, '<h6>$1$2$3</h6>');
+        
+        //渲染粗体
+        htmlContent = htmlContent.replace(/(?<!\\)\*(?<!\\)\*(<span.*?>.*?<\/span>)(?<!\\)\*(?<!\\)\*/g, '<b>$1</b>');
+        htmlContent = htmlContent.replace(/(?<!\\)\_(?<!\\)\_(<span.*?>.*?<\/span>)(?<!\\)\_(?<!\\)\_/g, '<b>$1</b>');
+    
+        //渲染斜体
+        htmlContent = htmlContent.replace(/(?<!\\)\*(<span.*?>.*?<\/span>)(?<!\\)\*/g, '<i>$1</i>');
+        htmlContent = htmlContent.replace(/(?<!\\)\_(<span.*?>.*?<\/span>)(?<!\\)\_/g, '<i>$1</i>');
+    
+    
+        htmlContent = htmlContent.replace(/(?<!\\)\~(?<!\\)\~(<span.*?>.*?<\/span>)(?<!\\)\~(?<!\\)\~/g, '<del>$1</del>');
+    
+        // 将修改后的HTML内容重新设置回元素
+        return htmlContent
+    }
+    
     async countWords(text: string): Promise<[number, number, number]> {
         const ast = this.processor.parse(text);
         let wordSet: Set<string> = new Set();
