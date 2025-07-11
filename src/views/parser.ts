@@ -267,7 +267,7 @@ export class TextParser {
                         ? STATUS_MAP[this.words.get(textLower).status]
                         : "new";
 
-                    return /[0-9\u4e00-\u9fa5]/.test(text) // 不把数字当做单词
+                    return /^[0-9]+$/.test(text) // 不把数字当做单词
                         ? `<span class="other">${text}</span>`
                         : `<span class="word ${status}">${text}</span>`;
                 }
